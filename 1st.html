@@ -1,0 +1,267 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Don Bosco Degree College - Portal</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            /* Indian Flag Background */
+            background: linear-gradient(to bottom, #FF9933 0%, #FF9933 33%, #FFFFFF 33%, #FFFFFF 66%, #138808 66%, #138808 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.98);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            width: 100%;
+            max-width: 700px;
+            text-align: center;
+            border-top: 5px solid #000080;
+        }
+
+        h1 { color: #000080; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .form-group { margin-bottom: 15px; text-align: left; }
+        
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: #000080;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover { background-color: #0000cd; transform: translateY(-2px); }
+
+        .hidden { display: none; }
+
+        /* Dashboard Styles */
+        .announcement-card {
+            background: #fff9e6;
+            border-left: 6px solid #FF9933;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+            border-radius: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 25px;
+            background: white;
+        }
+
+        th, td {
+            border: 1px solid #eee;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th { background: #f4f4f4; color: #333; }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-top: 20px;
+            color: #666;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="home" class="container">
+        <h1>DON BOSCO DEGREE COLLEGE</h1>
+        <p>Student Portal & Principal Management System</p>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 25px 0;">
+        <button onclick="nav('reg')">Student Registration</button>
+        <button onclick="nav('login')">Student Login</button>
+        <button onclick="nav('admin')" style="background: #138808;">Principal Login (Admin)</button>
+    </div>
+
+    <div id="reg" class="container hidden">
+        <h2>Register New Student</h2>
+        <div class="form-group">
+            <input type="text" id="r-name" placeholder="Enter Full Name">
+        </div>
+        <div class="form-group">
+            <input type="text" id="r-id" placeholder="Enter Roll Number / ID">
+        </div>
+        <div class="form-group">
+            <input type="password" id="r-pass" placeholder="Create Password">
+        </div>
+        <button onclick="handleRegister()">Complete Registration</button>
+        <div class="back-btn" onclick="nav('home')">← Back to Menu</div>
+    </div>
+
+    <div id="login" class="container hidden">
+        <h2>Student Login</h2>
+        <input type="text" id="l-id" placeholder="Roll Number / ID" style="margin-bottom:10px;">
+        <input type="password" id="l-pass" placeholder="Password">
+        <button onclick="handleLogin()">Sign In</button>
+        <div class="back-btn" onclick="nav('home')">← Back to Menu</div>
+    </div>
+
+    <div id="student-view" class="container hidden">
+        <h2 id="st-welcome">Welcome Student</h2>
+        <div class="announcement-card">
+            <h3 style="margin-top:0; color:#FF9933;">📢 Latest Updates</h3>
+            <p id="post-content">Loading announcements...</p>
+        </div>
+        <button onclick="nav('home')" style="background:#555;">Logout</button>
+    </div>
+
+    <div id="admin-login" class="container hidden">
+        <h2>Principal Access</h2>
+        <input type="password" id="a-key" placeholder="Enter Admin Passkey">
+        <button onclick="handleAdminLogin()">Verify Identity</button>
+        <div class="back-btn" onclick="nav('home')">← Back to Menu</div>
+    </div>
+
+    <div id="admin-view" class="container hidden" style="max-width: 850px;">
+        <h2>Principal's Control Panel</h2>
+        
+        <div class="announcement-card" style="background:#f0f7ff; border-left-color:#000080;">
+            <h3>Post Information</h3>
+            <textarea id="admin-post" rows="3" placeholder="Inform students about tours, exams, or meetings..."></textarea>
+            <button onclick="savePost()">Post Announcement</button>
+        </div>
+
+        <h3>Student Check-in Registry</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Student ID</th>
+                    <th>Last Login</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="student-table">
+                </tbody>
+        </table>
+        <button onclick="nav('home')" style="background:#cc0000; margin-top:30px;">Secure Logout</button>
+    </div>
+
+    <script>
+        // --- DATA LAYER (The "Backend") ---
+        const DB = {
+            getStudents: () => JSON.parse(localStorage.getItem('db_students') || '[]'),
+            saveStudents: (data) => localStorage.setItem('db_students', JSON.stringify(data)),
+            getPost: () => localStorage.getItem('db_post') || 'Welcome to Don Bosco Degree College!',
+            savePost: (txt) => localStorage.setItem('db_post', txt)
+        };
+
+        // Navigation Controller
+        function nav(screen) {
+            document.querySelectorAll('.container').forEach(c => c.classList.add('hidden'));
+            if(screen === 'home') document.getElementById('home').classList.remove('hidden');
+            if(screen === 'reg') document.getElementById('reg').classList.remove('hidden');
+            if(screen === 'login') document.getElementById('login').classList.remove('hidden');
+            if(screen === 'admin') document.getElementById('admin-login').classList.remove('hidden');
+            if(screen === 'st-view') {
+                document.getElementById('student-view').classList.remove('hidden');
+                document.getElementById('post-content').innerText = DB.getPost();
+            }
+            if(screen === 'ad-view') {
+                document.getElementById('admin-view').classList.remove('hidden');
+                refreshTable();
+            }
+        }
+
+        // Student Logic
+        function handleRegister() {
+            const name = document.getElementById('r-name').value;
+            const id = document.getElementById('r-id').value;
+            const pass = document.getElementById('r-pass').value;
+
+            if(!name || !id || !pass) return alert("Please fill all fields!");
+
+            let users = DB.getStudents();
+            users.push({ name, id, pass, lastLogin: 'Not yet logged in' });
+            DB.saveStudents(users);
+
+            alert("Registration complete! You can now login.");
+            nav('login');
+        }
+
+        function handleLogin() {
+            const id = document.getElementById('l-id').value;
+            const pass = document.getElementById('l-pass').value;
+            let users = DB.getStudents();
+
+            let user = users.find(u => u.id === id && u.pass === pass);
+            if(user) {
+                user.lastLogin = new Date().toLocaleString(); // Save check-in time
+                DB.saveStudents(users);
+                document.getElementById('st-welcome').innerText = "Welcome, " + user.name;
+                nav('st-view');
+            } else {
+                alert("Invalid ID or Password!");
+            }
+        }
+
+        // Admin Logic
+        function handleAdminLogin() {
+            const key = document.getElementById('a-key').value;
+            if(key === "ALBERT") nav('ad-view');
+            else alert("Incorrect Passkey!");
+        }
+
+        function savePost() {
+            const txt = document.getElementById('admin-post').value;
+            if(txt) {
+                DB.savePost(txt);
+                alert("Announcement Published!");
+                document.getElementById('admin-post').value = "";
+            }
+        }
+
+        function refreshTable() {
+            const list = DB.getStudents();
+            const body = document.getElementById('student-table');
+            body.innerHTML = list.map(u => `
+                <tr>
+                    <td>${u.name}</td>
+                    <td>${u.id}</td>
+                    <td>${u.lastLogin}</td>
+                    <td><span class="status-badge">Registered</span></td>
+                </tr>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
